@@ -1,0 +1,1350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id                     String                   @id
+  name                   String
+  legal_name             String?
+  tax_id                 String?
+  slug                   String                   @unique
+  status                 String                   @default("ACTIVE")
+  country_code           String                   @default("PE")
+  timezone               String                   @default("America/Lima")
+  currency_code          String                   @default("PEN")
+  metadata               String?
+  created_at             DateTime
+  updated_at             DateTime
+  deleted_at             DateTime?
+  TenantSetting          TenantSetting[]
+  TenantStore            TenantStore[]
+  TenantDomain           TenantDomain[]
+  TenantSaasSubscription TenantSaasSubscription?
+  SaasInvoice            SaasInvoice[]
+  User                   User[]
+  UserProfile            UserProfile[]
+  AuthIdentity           AuthIdentity[]
+  PasswordResetToken     PasswordResetToken[]
+  Role                   Role[]
+  RolePermission         RolePermission[]
+  UserRole               UserRole[]
+  Customer               Customer[]
+  Tag                    Tag[]
+  CustomerTag            CustomerTag[]
+  CustomerAddress        CustomerAddress[]
+  Catalog                Catalog[]
+  Category               Category[]
+  StoreOffering          StoreOffering[]
+  StoreOfferingCategory  StoreOfferingCategory[]
+  StoreOfferingImage     StoreOfferingImage[]
+  StoreOfferingAttribute StoreOfferingAttribute[]
+  OptionType             OptionType[]
+  OptionValue            OptionValue[]
+  StoreVariant           StoreVariant[]
+  StoreVariantOption     StoreVariantOption[]
+  ProductDetail          ProductDetail[]
+  ServiceDetail          ServiceDetail[]
+  MembershipPlan         MembershipPlan[]
+  PriceList              PriceList[]
+  Price                  Price[]
+  InventoryLocation      InventoryLocation[]
+  StockItem              StockItem[]
+  StockBalance           StockBalance[]
+  StockMovement          StockMovement[]
+  Cart                   Cart[]
+  CartItem               CartItem[]
+  Order                  Order[]
+  OrderItem              OrderItem[]
+  Fulfillment            Fulfillment[]
+  ServiceBooking         ServiceBooking[]
+  CustomerMembership     CustomerMembership[]
+  Coupon                 Coupon[]
+  CouponRule             CouponRule[]
+  PaymentMethod          PaymentMethod[]
+  Payment                Payment[]
+  Refund                 Refund[]
+  TaxDocument            TaxDocument[]
+  WhatsappAccount        WhatsappAccount[]
+  WhatsappConversation   WhatsappConversation[]
+  WhatsappMessage        WhatsappMessage[]
+  WhatsappTemplate       WhatsappTemplate[]
+  ConversationOrder      ConversationOrder[]
+  WebhookEvent           WebhookEvent[]
+  OutboxEvent            OutboxEvent[]
+  AuditLog               AuditLog[]
+  Prospect               Prospect[]
+  Report                 Report[]
+
+  @@index([status])
+  @@index([country_code])
+  @@index([created_at])
+  @@map("tenants")
+}
+
+model TenantSetting {
+  id         String   @id
+  tenant_id  String
+  key        String
+  value      String
+  scope      String   @default("TENANT")
+  created_at DateTime
+  updated_at DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, key])
+  @@index([tenant_id, scope, key])
+  @@map("tenant_settings")
+}
+
+model TenantStore {
+  id           String    @id
+  tenant_id    String
+  name         String
+  channel      String    @default("WEB")
+  status       String    @default("ACTIVE")
+  address_text String?
+  metadata     String?
+  created_at   DateTime
+  updated_at   DateTime
+  deleted_at   DateTime?
+
+  tenant            Tenant              @relation(fields: [tenant_id], references: [id])
+  Catalog           Catalog?
+  InventoryLocation InventoryLocation[]
+  WhatsappAccount   WhatsappAccount[]
+  Prospect          Prospect[]
+  Report            Report[]
+
+  @@index([tenant_id, name])
+  @@index([tenant_id, status])
+  @@map("tenant_stores")
+}
+
+model TenantDomain {
+  id          String    @id
+  tenant_id   String
+  domain      String
+  is_primary  Boolean   @default(false)
+  is_verified Boolean   @default(false)
+  verified_at DateTime?
+  created_at  DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([domain])
+  @@unique([tenant_id, domain])
+  @@index([tenant_id, is_primary])
+  @@map("tenant_domains")
+}
+
+model SaasSubscription {
+  id                     String                   @id
+  code                   String                   @unique
+  name                   String
+  description            String?
+  is_active              Boolean                  @default(true)
+  created_at             DateTime
+  updated_at             DateTime
+  MembershipCondition    MembershipCondition[]
+  TenantSaasSubscription TenantSaasSubscription[]
+
+  @@map("saas_subscriptions")
+}
+
+model MembershipCondition {
+  id                   String   @id
+  saas_subscription_id String
+  key                  String
+  value                String
+  created_at           DateTime
+  updated_at           DateTime
+
+  saas_subscription SaasSubscription @relation(fields: [saas_subscription_id], references: [id])
+
+  @@unique([saas_subscription_id, key])
+  @@map("membership_conditions")
+}
+
+model TenantSaasSubscription {
+  id                   String    @id
+  tenant_id            String
+  saas_subscription_id String
+  status               String    @default("ACTIVE")
+  started_at           DateTime
+  ends_at              DateTime?
+  trial_ends_at        DateTime?
+  cancel_at_period_end Boolean   @default(false)
+  metadata             String?
+  created_at           DateTime
+  updated_at           DateTime
+
+  tenant            Tenant           @relation(fields: [tenant_id], references: [id])
+  saas_subscription SaasSubscription @relation(fields: [saas_subscription_id], references: [id])
+  SaasInvoice       SaasInvoice[]
+
+  @@unique([tenant_id])
+  @@index([saas_subscription_id])
+  @@index([status])
+  @@map("tenant_saas_subscriptions")
+}
+
+model SaasInvoice {
+  id                          String    @id
+  tenant_id                   String
+  tenant_saas_subscription_id String?
+  invoice_number              String
+  currency_code               String    @default("PEN")
+  amount_total                Decimal
+  amount_paid                 Decimal   @default(0)
+  status                      String    @default("OPEN")
+  due_date                    DateTime?
+  paid_at                     DateTime?
+  provider                    String?
+  provider_invoice_id         String?
+  metadata                    String?
+  created_at                  DateTime
+  updated_at                  DateTime
+
+  tenant                   Tenant                  @relation(fields: [tenant_id], references: [id])
+  tenant_saas_subscription TenantSaasSubscription? @relation(fields: [tenant_saas_subscription_id], references: [id])
+
+  @@unique([tenant_id, invoice_number])
+  @@index([tenant_id, status])
+  @@index([provider, provider_invoice_id])
+  @@map("saas_invoices")
+}
+
+model User {
+  id                 String    @id
+  tenant_id          String
+  email              String
+  status             String    @default("ACTIVE")
+  email_verified_at  DateTime?
+  invited_by_user_id String?
+  invited_at         DateTime?
+  last_login_at      DateTime?
+  metadata           String?
+  created_at         DateTime
+  updated_at         DateTime
+  deleted_at         DateTime?
+
+  tenant             Tenant               @relation(fields: [tenant_id], references: [id])
+  invitedBy          User?                @relation("UserInvitations", fields: [invited_by_user_id], references: [id])
+  invitedUsers       User[]               @relation("UserInvitations")
+  UserProfile        UserProfile[]
+  AuthIdentity       AuthIdentity[]
+  PasswordResetToken PasswordResetToken[]
+  UserRole           UserRole[]
+  StockMovement      StockMovement[]
+  Order              Order[]
+  ServiceBooking     ServiceBooking[]
+  Refund             Refund[]
+  AuditLog           AuditLog[]
+
+  @@unique([tenant_id, email])
+  @@index([tenant_id, status])
+  @@map("users")
+}
+
+model UserProfile {
+  id         String   @id
+  tenant_id  String
+  user_id    String
+  full_name  String
+  phone      String?
+  avatar_url String?
+  locale     String   @default("es-PE")
+  timezone   String   @default("America/Lima")
+  metadata   String?
+  created_at DateTime
+  updated_at DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id])
+
+  @@unique([tenant_id, user_id])
+  @@map("user_profiles")
+}
+
+model AuthIdentity {
+  id                  String    @id
+  tenant_id           String
+  user_id             String
+  provider            String
+  provider_user_id    String?
+  password_hash       String?
+  password_updated_at DateTime?
+  mfa_enabled         Boolean   @default(false)
+  created_at          DateTime
+  updated_at          DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id])
+
+  @@unique([tenant_id, user_id, provider])
+  @@index([tenant_id, provider, provider_user_id])
+  @@map("auth_identities")
+}
+
+model PasswordResetToken {
+  id         String    @id
+  tenant_id  String
+  user_id    String
+  token_hash String
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id])
+
+  @@unique([token_hash])
+  @@index([tenant_id, user_id])
+  @@index([expires_at])
+  @@map("password_reset_tokens")
+}
+
+model Role {
+  id          String   @id
+  tenant_id   String
+  name        String
+  description String?
+  is_system   Boolean  @default(false)
+  created_at  DateTime
+  updated_at  DateTime
+
+  tenant         Tenant           @relation(fields: [tenant_id], references: [id])
+  RolePermission RolePermission[]
+  UserRole       UserRole[]
+
+  @@unique([tenant_id, name])
+  @@map("roles")
+}
+
+model Permission {
+  id             String           @id
+  key            String           @unique
+  description    String?
+  RolePermission RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            String @id
+  tenant_id     String
+  role_id       String
+  permission_id String
+
+  tenant     Tenant     @relation(fields: [tenant_id], references: [id])
+  role       Role       @relation(fields: [role_id], references: [id])
+  permission Permission @relation(fields: [permission_id], references: [id])
+
+  @@unique([tenant_id, role_id, permission_id])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id         String   @id
+  tenant_id  String
+  user_id    String
+  role_id    String
+  created_at DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id])
+  role   Role   @relation(fields: [role_id], references: [id])
+
+  @@unique([tenant_id, user_id, role_id])
+  @@map("user_roles")
+}
+
+model Customer {
+  id               String    @id
+  tenant_id        String
+  full_name        String?
+  phone_e164       String
+  email            String?
+  status           String    @default("ACTIVE")
+  marketing_opt_in Boolean   @default(false)
+  metadata         String?
+  created_at       DateTime
+  updated_at       DateTime
+  deleted_at       DateTime?
+
+  tenant               Tenant                 @relation(fields: [tenant_id], references: [id])
+  CustomerTag          CustomerTag[]
+  CustomerAddress      CustomerAddress[]
+  Cart                 Cart[]
+  Order                Order[]
+  ServiceBooking       ServiceBooking[]
+  CustomerMembership   CustomerMembership[]
+  WhatsappConversation WhatsappConversation[]
+
+  @@unique([tenant_id, phone_e164])
+  @@index([tenant_id, email])
+  @@index([tenant_id, status])
+  @@map("customers")
+}
+
+model Tag {
+  id        String @id
+  tenant_id String
+  name      String
+
+  tenant      Tenant        @relation(fields: [tenant_id], references: [id])
+  CustomerTag CustomerTag[]
+
+  @@unique([tenant_id, name])
+  @@map("tags")
+}
+
+model CustomerTag {
+  id          String   @id
+  tenant_id   String
+  customer_id String
+  tag_id      String
+  created_at  DateTime
+
+  tenant   Tenant   @relation(fields: [tenant_id], references: [id])
+  customer Customer @relation(fields: [customer_id], references: [id])
+  tag      Tag      @relation(fields: [tag_id], references: [id])
+
+  @@unique([tenant_id, customer_id, tag_id])
+  @@map("customer_tags")
+}
+
+model CustomerAddress {
+  id            String   @id
+  tenant_id     String
+  customer_id   String
+  label         String?
+  country_code  String   @default("PE")
+  region        String?
+  city          String?
+  district      String?
+  address_line1 String
+  address_line2 String?
+  reference     String?
+  postal_code   String?
+  geo_lat       Decimal?
+  geo_lng       Decimal?
+  is_default    Boolean  @default(false)
+  created_at    DateTime
+  updated_at    DateTime
+
+  tenant         Tenant   @relation(fields: [tenant_id], references: [id])
+  customer       Customer @relation(fields: [customer_id], references: [id])
+  shippingOrders Order[]  @relation("OrderShippingAddress")
+  billingOrders  Order[]  @relation("OrderBillingAddress")
+
+  @@index([tenant_id, customer_id])
+  @@map("customer_addresses")
+}
+
+model Catalog {
+  id         String   @id
+  tenant_id  String
+  store_id   String
+  name       String   @default("Default Catalog")
+  status     String   @default("ACTIVE")
+  created_at DateTime
+  updated_at DateTime
+
+  tenant        Tenant          @relation(fields: [tenant_id], references: [id])
+  store         TenantStore     @relation(fields: [store_id], references: [id])
+  Category      Category[]
+  StoreOffering StoreOffering[]
+  PriceList     PriceList[]
+
+  @@unique([store_id])
+  @@index([tenant_id, store_id])
+  @@map("catalogs")
+}
+
+model Category {
+  id         String   @id
+  tenant_id  String
+  catalog_id String
+  parent_id  String?
+  name       String
+  slug       String
+  sort_order Int      @default(0)
+  is_active  Boolean  @default(true)
+  created_at DateTime
+  updated_at DateTime
+
+  tenant                Tenant                  @relation(fields: [tenant_id], references: [id])
+  catalog               Catalog                 @relation(fields: [catalog_id], references: [id])
+  parent                Category?               @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children              Category[]              @relation("CategoryHierarchy")
+  StoreOfferingCategory StoreOfferingCategory[]
+  CouponRule            CouponRule[]
+
+  @@unique([catalog_id, slug])
+  @@index([catalog_id, parent_id])
+  @@map("categories")
+}
+
+model StoreOffering {
+  id              String    @id
+  tenant_id       String
+  catalog_id      String
+  type            String
+  title           String
+  description     String?
+  status          String    @default("ACTIVE")
+  handle          String?
+  cover_image_url String?
+  currency_code   String    @default("PEN")
+  tax_code        String?
+  is_tax_included Boolean   @default(true)
+  base_data       String?
+  created_at      DateTime
+  updated_at      DateTime
+  deleted_at      DateTime?
+
+  tenant                 Tenant                   @relation(fields: [tenant_id], references: [id])
+  catalog                Catalog                  @relation(fields: [catalog_id], references: [id])
+  StoreOfferingCategory  StoreOfferingCategory[]
+  StoreOfferingImage     StoreOfferingImage[]
+  StoreOfferingAttribute StoreOfferingAttribute[]
+  OptionType             OptionType[]
+  StoreVariant           StoreVariant[]
+  ProductDetail          ProductDetail[]
+  ServiceDetail          ServiceDetail[]
+  MembershipPlan         MembershipPlan[]
+  Price                  Price[]
+  StockItem              StockItem[]
+  CartItem               CartItem[]
+  OrderItem              OrderItem[]
+  ServiceBooking         ServiceBooking[]
+  CouponRule             CouponRule[]
+
+  @@index([tenant_id, type])
+  @@index([tenant_id, handle])
+  @@index([catalog_id, status])
+  @@map("store_offerings")
+}
+
+model StoreOfferingCategory {
+  id          String   @id
+  tenant_id   String
+  offering_id String
+  category_id String
+  created_at  DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+  category Category      @relation(fields: [category_id], references: [id])
+
+  @@unique([tenant_id, offering_id, category_id])
+  @@map("store_offering_categories")
+}
+
+model StoreOfferingImage {
+  id          String   @id
+  tenant_id   String
+  offering_id String
+  url         String
+  alt_text    String?
+  sort_order  Int      @default(0)
+  created_at  DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+
+  @@index([tenant_id, offering_id, sort_order])
+  @@map("store_offering_images")
+}
+
+model StoreOfferingAttribute {
+  id          String   @id
+  tenant_id   String
+  offering_id String
+  key         String
+  value       String
+  created_at  DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+
+  @@index([tenant_id, offering_id, key])
+  @@map("store_offering_attributes")
+}
+
+model OptionType {
+  id          String @id
+  tenant_id   String
+  offering_id String
+  name        String
+  sort_order  Int    @default(0)
+
+  tenant      Tenant        @relation(fields: [tenant_id], references: [id])
+  offering    StoreOffering @relation(fields: [offering_id], references: [id])
+  OptionValue OptionValue[]
+
+  @@unique([tenant_id, offering_id, name])
+  @@map("option_types")
+}
+
+model OptionValue {
+  id             String @id
+  tenant_id      String
+  option_type_id String
+  value          String
+  sort_order     Int    @default(0)
+
+  tenant             Tenant               @relation(fields: [tenant_id], references: [id])
+  optionType         OptionType           @relation(fields: [option_type_id], references: [id])
+  StoreVariantOption StoreVariantOption[]
+
+  @@unique([tenant_id, option_type_id, value])
+  @@map("option_values")
+}
+
+model StoreVariant {
+  id          String    @id
+  tenant_id   String
+  offering_id String
+  sku         String?
+  barcode     String?
+  status      String    @default("ACTIVE")
+  price_final Decimal   @default(0)
+  tax_rate    Decimal   @default(0)
+  created_at  DateTime
+  updated_at  DateTime
+  deleted_at  DateTime?
+
+  tenant             Tenant               @relation(fields: [tenant_id], references: [id])
+  offering           StoreOffering        @relation(fields: [offering_id], references: [id])
+  StoreVariantOption StoreVariantOption[]
+  Price              Price[]
+  StockItem          StockItem[]
+  CartItem           CartItem[]
+  OrderItem          OrderItem[]
+
+  @@index([tenant_id, offering_id])
+  @@index([tenant_id, sku])
+  @@map("store_variants")
+}
+
+model StoreVariantOption {
+  id              String @id
+  tenant_id       String
+  variant_id      String
+  option_value_id String
+
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  variant     StoreVariant @relation(fields: [variant_id], references: [id])
+  optionValue OptionValue  @relation(fields: [option_value_id], references: [id])
+
+  @@unique([tenant_id, variant_id, option_value_id])
+  @@map("store_variant_options")
+}
+
+model ProductDetail {
+  id                String   @id
+  tenant_id         String
+  offering_id       String
+  unit              String?
+  weight_kg         Decimal?
+  requires_shipping Boolean  @default(true)
+  allow_backorder   Boolean  @default(false)
+  shipping_data     String?
+  created_at        DateTime
+  updated_at        DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+
+  @@unique([tenant_id, offering_id])
+  @@map("product_details")
+}
+
+model ServiceDetail {
+  id                String   @id
+  tenant_id         String
+  offering_id       String
+  duration_minutes  Int      @default(60)
+  location_type     String
+  requires_schedule Boolean  @default(true)
+  buffer_before_min Int      @default(0)
+  buffer_after_min  Int      @default(0)
+  booking_rules     String?
+  created_at        DateTime
+  updated_at        DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+
+  @@unique([tenant_id, offering_id])
+  @@map("service_details")
+}
+
+model MembershipPlan {
+  id               String   @id
+  tenant_id        String
+  offering_id      String
+  billing_type     String
+  period_unit      String?
+  period_count     Int?
+  validity_days    Int?
+  credits_included Int?
+  rollover_credits Boolean  @default(false)
+  trial_days       Int      @default(0)
+  entitlements     String?
+  created_at       DateTime
+  updated_at       DateTime
+
+  tenant             Tenant               @relation(fields: [tenant_id], references: [id])
+  offering           StoreOffering        @relation(fields: [offering_id], references: [id])
+  CustomerMembership CustomerMembership[]
+
+  @@unique([tenant_id, offering_id])
+  @@map("membership_plans")
+}
+
+model PriceList {
+  id            String   @id
+  tenant_id     String
+  catalog_id    String
+  name          String
+  currency_code String   @default("PEN")
+  is_default    Boolean  @default(false)
+  created_at    DateTime
+  updated_at    DateTime
+
+  tenant  Tenant  @relation(fields: [tenant_id], references: [id])
+  catalog Catalog @relation(fields: [catalog_id], references: [id])
+  Price   Price[]
+  Cart    Cart[]
+  Order   Order[]
+
+  @@unique([tenant_id, catalog_id, name])
+  @@index([tenant_id, catalog_id, is_default])
+  @@map("price_lists")
+}
+
+model Price {
+  id            String    @id
+  tenant_id     String
+  price_list_id String
+  offering_id   String?
+  variant_id    String?
+  list_price    Decimal?
+  sale_price    Decimal
+  starts_at     DateTime?
+  ends_at       DateTime?
+  is_active     Boolean   @default(true)
+  created_at    DateTime
+  updated_at    DateTime
+
+  tenant     Tenant         @relation(fields: [tenant_id], references: [id])
+  price_list PriceList      @relation(fields: [price_list_id], references: [id])
+  offering   StoreOffering? @relation(fields: [offering_id], references: [id])
+  variant    StoreVariant?  @relation(fields: [variant_id], references: [id])
+
+  @@unique([tenant_id, price_list_id, offering_id, variant_id])
+  @@index([tenant_id, is_active, starts_at, ends_at])
+  @@map("prices")
+}
+
+model InventoryLocation {
+  id         String   @id
+  tenant_id  String
+  store_id   String?
+  name       String
+  code       String?
+  is_default Boolean  @default(false)
+  created_at DateTime
+  updated_at DateTime
+
+  tenant        Tenant          @relation(fields: [tenant_id], references: [id])
+  store         TenantStore?    @relation(fields: [store_id], references: [id])
+  StockBalance  StockBalance[]
+  StockMovement StockMovement[]
+
+  @@unique([tenant_id, name])
+  @@index([tenant_id, is_default])
+  @@map("inventory_locations")
+}
+
+model StockItem {
+  id          String   @id
+  tenant_id   String
+  offering_id String?
+  variant_id  String?
+  track_stock Boolean  @default(true)
+  created_at  DateTime
+
+  tenant        Tenant          @relation(fields: [tenant_id], references: [id])
+  offering      StoreOffering?  @relation(fields: [offering_id], references: [id])
+  variant       StoreVariant?   @relation(fields: [variant_id], references: [id])
+  StockBalance  StockBalance[]
+  StockMovement StockMovement[]
+
+  @@unique([tenant_id, offering_id, variant_id])
+  @@map("stock_items")
+}
+
+model StockBalance {
+  id            String   @id
+  tenant_id     String
+  stock_item_id String
+  location_id   String
+  qty_on_hand   Int      @default(0)
+  qty_reserved  Int      @default(0)
+  updated_at    DateTime
+
+  tenant    Tenant            @relation(fields: [tenant_id], references: [id])
+  stockItem StockItem         @relation(fields: [stock_item_id], references: [id])
+  location  InventoryLocation @relation(fields: [location_id], references: [id])
+
+  @@unique([tenant_id, stock_item_id, location_id])
+  @@map("stock_balances")
+}
+
+model StockMovement {
+  id                 String   @id
+  tenant_id          String
+  stock_item_id      String
+  location_id        String
+  movement_type      String
+  qty                Int
+  reason             String?
+  reference_type     String?
+  reference_id       String?
+  created_by_user_id String?
+  created_at         DateTime
+
+  tenant     Tenant            @relation(fields: [tenant_id], references: [id])
+  stockItem  StockItem         @relation(fields: [stock_item_id], references: [id])
+  location   InventoryLocation @relation(fields: [location_id], references: [id])
+  created_by User?             @relation(fields: [created_by_user_id], references: [id])
+
+  @@index([tenant_id, created_at])
+  @@index([tenant_id, stock_item_id, created_at])
+  @@index([tenant_id, reference_type, reference_id])
+  @@map("stock_movements")
+}
+
+model Cart {
+  id            String   @id
+  tenant_id     String
+  customer_id   String
+  status        String   @default("ACTIVE")
+  currency_code String   @default("PEN")
+  price_list_id String?
+  source        String   @default("WHATSAPP")
+  created_at    DateTime
+  updated_at    DateTime
+
+  tenant    Tenant     @relation(fields: [tenant_id], references: [id])
+  customer  Customer   @relation(fields: [customer_id], references: [id])
+  priceList PriceList? @relation(fields: [price_list_id], references: [id])
+  CartItem  CartItem[]
+
+  @@index([tenant_id, customer_id, status])
+  @@index([tenant_id, created_at])
+  @@map("carts")
+}
+
+model CartItem {
+  id          String   @id
+  tenant_id   String
+  cart_id     String
+  offering_id String
+  variant_id  String?
+  quantity    Int      @default(1)
+  unit_price  Decimal
+  meta        String?
+  created_at  DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  cart     Cart          @relation(fields: [cart_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+  variant  StoreVariant? @relation(fields: [variant_id], references: [id])
+
+  @@index([tenant_id, cart_id])
+  @@map("cart_items")
+}
+
+model Order {
+  id                  String    @id
+  tenant_id           String
+  customer_id         String
+  order_number        String
+  status              String    @default("PENDING_PAYMENT")
+  channel             String    @default("WHATSAPP")
+  currency_code       String    @default("PEN")
+  price_list_id       String?
+  subtotal            Decimal   @default(0)
+  discount_total      Decimal   @default(0)
+  tax_total           Decimal   @default(0)
+  shipping_total      Decimal   @default(0)
+  total               Decimal   @default(0)
+  coupon_id           String?
+  notes               String?
+  shipping_address_id String?
+  billing_address_id  String?
+  placed_at           DateTime?
+  created_by_user_id  String?
+  metadata            String?
+  created_at          DateTime
+  updated_at          DateTime
+
+  tenant             Tenant               @relation(fields: [tenant_id], references: [id])
+  customer           Customer             @relation(fields: [customer_id], references: [id])
+  priceList          PriceList?           @relation(fields: [price_list_id], references: [id])
+  coupon             Coupon?              @relation(fields: [coupon_id], references: [id])
+  shippingAddress    CustomerAddress?     @relation("OrderShippingAddress", fields: [shipping_address_id], references: [id])
+  billingAddress     CustomerAddress?     @relation("OrderBillingAddress", fields: [billing_address_id], references: [id])
+  createdBy          User?                @relation(fields: [created_by_user_id], references: [id])
+  OrderItem          OrderItem[]
+  Fulfillment        Fulfillment[]
+  ServiceBooking     ServiceBooking[]
+  CustomerMembership CustomerMembership[]
+  Payment            Payment[]
+  TaxDocument        TaxDocument[]
+  ConversationOrder  ConversationOrder[]
+
+  @@unique([tenant_id, order_number])
+  @@index([tenant_id, customer_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, created_at])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String   @id
+  tenant_id       String
+  order_id        String
+  offering_id     String
+  variant_id      String?
+  type            String
+  title_snapshot  String
+  sku_snapshot    String?
+  unit_price      Decimal
+  quantity        Int      @default(1)
+  total_price     Decimal
+  tax_amount      Decimal  @default(0)
+  discount_amount Decimal  @default(0)
+  meta            String?
+  created_at      DateTime
+
+  tenant   Tenant        @relation(fields: [tenant_id], references: [id])
+  order    Order         @relation(fields: [order_id], references: [id])
+  offering StoreOffering @relation(fields: [offering_id], references: [id])
+  variant  StoreVariant? @relation(fields: [variant_id], references: [id])
+
+  @@index([tenant_id, order_id])
+  @@map("order_items")
+}
+
+model Fulfillment {
+  id            String    @id
+  tenant_id     String
+  order_id      String
+  status        String    @default("PENDING")
+  carrier       String?
+  tracking_code String?
+  shipped_at    DateTime?
+  delivered_at  DateTime?
+  created_at    DateTime
+  updated_at    DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  order  Order  @relation(fields: [order_id], references: [id])
+
+  @@map("fulfillments")
+}
+
+model ServiceBooking {
+  id               String   @id
+  tenant_id        String
+  offering_id      String
+  customer_id      String
+  order_id         String?
+  status           String   @default("PENDING")
+  starts_at        DateTime
+  ends_at          DateTime
+  assigned_user_id String?
+  notes            String?
+  created_at       DateTime
+  updated_at       DateTime
+
+  tenant      Tenant        @relation(fields: [tenant_id], references: [id])
+  offering    StoreOffering @relation(fields: [offering_id], references: [id])
+  customer    Customer      @relation(fields: [customer_id], references: [id])
+  order       Order?        @relation(fields: [order_id], references: [id])
+  assigned_to User?         @relation(fields: [assigned_user_id], references: [id])
+
+  @@index([tenant_id, starts_at])
+  @@index([tenant_id, offering_id])
+  @@index([tenant_id, customer_id])
+  @@map("service_bookings")
+}
+
+model CustomerMembership {
+  id                   String    @id
+  tenant_id            String
+  customer_id          String
+  membership_plan_id   String
+  order_id             String?
+  status               String    @default("ACTIVE")
+  started_at           DateTime
+  current_period_start DateTime?
+  current_period_end   DateTime?
+  expires_at           DateTime?
+  credits_balance      Int       @default(0)
+  auto_renew           Boolean   @default(false)
+  metadata             String?
+  created_at           DateTime
+  updated_at           DateTime
+
+  tenant          Tenant         @relation(fields: [tenant_id], references: [id])
+  customer        Customer       @relation(fields: [customer_id], references: [id])
+  membership_plan MembershipPlan @relation(fields: [membership_plan_id], references: [id])
+  order           Order?         @relation(fields: [order_id], references: [id])
+
+  @@index([tenant_id, customer_id, membership_plan_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, expires_at])
+  @@map("customer_memberships")
+}
+
+model Coupon {
+  id              String    @id
+  tenant_id       String
+  code            String
+  status          String    @default("ACTIVE")
+  discount_type   String
+  discount_value  Decimal
+  min_order_total Decimal?
+  max_uses        Int?
+  used_count      Int       @default(0)
+  starts_at       DateTime?
+  ends_at         DateTime?
+  created_at      DateTime
+  updated_at      DateTime
+
+  tenant     Tenant       @relation(fields: [tenant_id], references: [id])
+  Order      Order[]
+  CouponRule CouponRule[]
+
+  @@unique([tenant_id, code])
+  @@index([tenant_id, status])
+  @@map("coupons")
+}
+
+model CouponRule {
+  id          String  @id
+  tenant_id   String
+  coupon_id   String
+  scope       String
+  offering_id String?
+  category_id String?
+  rule_type   String
+  rule        String?
+
+  tenant   Tenant         @relation(fields: [tenant_id], references: [id])
+  coupon   Coupon         @relation(fields: [coupon_id], references: [id])
+  offering StoreOffering? @relation(fields: [offering_id], references: [id])
+  category Category?      @relation(fields: [category_id], references: [id])
+
+  @@map("coupon_rules")
+}
+
+model PaymentMethod {
+  id         String   @id
+  tenant_id  String
+  provider   String
+  name       String
+  is_active  Boolean  @default(true)
+  config     String?
+  created_at DateTime
+  updated_at DateTime
+
+  tenant  Tenant    @relation(fields: [tenant_id], references: [id])
+  Payment Payment[]
+
+  @@index([tenant_id, provider])
+  @@map("payment_methods")
+}
+
+model Payment {
+  id                  String    @id
+  tenant_id           String
+  order_id            String
+  method_id           String
+  status              String    @default("PENDING")
+  amount              Decimal
+  currency_code       String    @default("PEN")
+  provider_payment_id String?
+  idempotency_key     String
+  provider_payload    String?
+  paid_at             DateTime?
+  created_at          DateTime
+  updated_at          DateTime
+
+  tenant Tenant        @relation(fields: [tenant_id], references: [id])
+  order  Order         @relation(fields: [order_id], references: [id])
+  method PaymentMethod @relation(fields: [method_id], references: [id])
+  Refund Refund[]
+
+  @@unique([tenant_id, idempotency_key])
+  @@index([tenant_id, order_id])
+  @@index([tenant_id, provider_payment_id])
+  @@index([tenant_id, status])
+  @@map("payments")
+}
+
+model Refund {
+  id                   String   @id
+  tenant_id            String
+  payment_id           String
+  status               String   @default("PENDING")
+  amount               Decimal
+  reason               String?
+  provider_refund_id   String?
+  requested_by_user_id String?
+  created_at           DateTime
+  updated_at           DateTime
+
+  tenant       Tenant  @relation(fields: [tenant_id], references: [id])
+  payment      Payment @relation(fields: [payment_id], references: [id])
+  requested_by User?   @relation(fields: [requested_by_user_id], references: [id])
+
+  @@index([tenant_id, payment_id])
+  @@index([tenant_id, status])
+  @@map("refunds")
+}
+
+model TaxDocument {
+  id                  String    @id
+  tenant_id           String
+  order_id            String
+  doc_type            String
+  series              String?
+  number              String?
+  status              String    @default("PENDING")
+  customer_doc_type   String?
+  customer_doc_number String?
+  sunat_payload       String?
+  sunat_response      String?
+  issued_at           DateTime?
+  created_at          DateTime
+  updated_at          DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+  order  Order  @relation(fields: [order_id], references: [id])
+
+  @@unique([tenant_id, doc_type, series, number])
+  @@unique([tenant_id, order_id])
+  @@index([tenant_id, status])
+  @@map("tax_documents")
+}
+
+model WhatsappAccount {
+  id              String   @id
+  tenant_id       String
+  store_id        String?
+  provider        String
+  phone_number_id String
+  waba_id         String?
+  display_phone   String?
+  is_active       Boolean  @default(true)
+  config          String?
+  created_at      DateTime
+  updated_at      DateTime
+
+  tenant               Tenant                 @relation(fields: [tenant_id], references: [id])
+  store                TenantStore?           @relation(fields: [store_id], references: [id])
+  WhatsappConversation WhatsappConversation[]
+
+  @@unique([tenant_id, phone_number_id])
+  @@map("whatsapp_accounts")
+}
+
+model WhatsappConversation {
+  id                  String    @id
+  tenant_id           String
+  whatsapp_account_id String
+  customer_id         String
+  wa_conversation_id  String?
+  status              String    @default("OPEN")
+  last_message_at     DateTime?
+  created_at          DateTime
+  updated_at          DateTime
+
+  tenant            Tenant              @relation(fields: [tenant_id], references: [id])
+  whatsappAccount   WhatsappAccount     @relation(fields: [whatsapp_account_id], references: [id])
+  customer          Customer            @relation(fields: [customer_id], references: [id])
+  WhatsappMessage   WhatsappMessage[]
+  ConversationOrder ConversationOrder[]
+
+  @@index([tenant_id, whatsapp_account_id, customer_id])
+  @@index([tenant_id, last_message_at])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsappMessage {
+  id                  String   @id
+  tenant_id           String
+  conversation_id     String
+  direction           String
+  message_type        String
+  provider_message_id String?
+  text_body           String?
+  payload             String?
+  status              String   @default("SENT")
+  sent_at             DateTime
+  created_at          DateTime
+
+  tenant       Tenant               @relation(fields: [tenant_id], references: [id])
+  conversation WhatsappConversation @relation(fields: [conversation_id], references: [id])
+
+  @@index([tenant_id, provider_message_id])
+  @@index([tenant_id, conversation_id, sent_at])
+  @@map("whatsapp_messages")
+}
+
+model WhatsappTemplate {
+  id         String   @id
+  tenant_id  String
+  name       String
+  language   String   @default("es")
+  category   String
+  content    String
+  status     String   @default("ACTIVE")
+  created_at DateTime
+  updated_at DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, name, language])
+  @@map("whatsapp_templates")
+}
+
+model ConversationOrder {
+  id              String   @id
+  tenant_id       String
+  conversation_id String
+  order_id        String
+  created_at      DateTime
+
+  tenant       Tenant               @relation(fields: [tenant_id], references: [id])
+  conversation WhatsappConversation @relation(fields: [conversation_id], references: [id])
+  order        Order                @relation(fields: [order_id], references: [id])
+
+  @@unique([tenant_id, conversation_id, order_id])
+  @@map("conversation_orders")
+}
+
+model WebhookEvent {
+  id           String    @id
+  tenant_id    String
+  provider     String
+  event_type   String
+  external_id  String
+  payload      String
+  received_at  DateTime
+  processed_at DateTime?
+  status       String    @default("RECEIVED")
+  error        String?
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, provider, external_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, received_at])
+  @@map("webhook_events")
+}
+
+model OutboxEvent {
+  id           String    @id
+  tenant_id    String
+  topic        String
+  payload      String
+  status       String    @default("PENDING")
+  available_at DateTime
+  sent_at      DateTime?
+  attempts     Int       @default(0)
+  last_error   String?
+  created_at   DateTime
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, status, available_at])
+  @@index([tenant_id, topic, created_at])
+  @@map("outbox_events")
+}
+
+model AuditLog {
+  id            String   @id
+  tenant_id     String
+  actor_user_id String?
+  action        String
+  entity_type   String
+  entity_id     String?
+  before        String?
+  after         String?
+  ip            String?
+  user_agent    String?
+  created_at    DateTime
+
+  tenant    Tenant @relation(fields: [tenant_id], references: [id])
+  actorUser User?  @relation(fields: [actor_user_id], references: [id])
+
+  @@index([tenant_id, created_at])
+  @@index([tenant_id, entity_type, entity_id])
+  @@index([tenant_id, actor_user_id, created_at])
+  @@map("audit_logs")
+}
+
+model Prospect {
+  id         String   @id
+  tenant_id  String
+  store_id   String?
+  full_name  String?
+  phone_e164 String?
+  email      String?
+  source     String   @default("WHATSAPP")
+  stage      String   @default("NEW")
+  notes      String?
+  metadata   String?
+  created_at DateTime
+  updated_at DateTime
+
+  tenant Tenant       @relation(fields: [tenant_id], references: [id])
+  store  TenantStore? @relation(fields: [store_id], references: [id])
+
+  @@index([tenant_id, stage, created_at])
+  @@index([tenant_id, phone_e164])
+  @@map("prospects")
+}
+
+model Report {
+  id           String   @id
+  tenant_id    String
+  store_id     String?
+  period       String
+  period_start DateTime
+  period_end   DateTime
+  metrics      String
+  created_at   DateTime
+
+  tenant Tenant       @relation(fields: [tenant_id], references: [id])
+  store  TenantStore? @relation(fields: [store_id], references: [id])
+
+  @@unique([tenant_id, period, period_start, period_end])
+  @@index([tenant_id, created_at])
+  @@map("reports")
+}
