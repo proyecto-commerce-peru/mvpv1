@@ -1,9 +1,15 @@
 ## Getting Started
 
-First, run the development server:
+First, download libraries:
 
 ```bash
-pnpm dev
+npm install
+```
+
+Then, run the development server:
+
+```bash
+pnpm dev || npm run dev
 ```
 
 ## Environment
@@ -19,6 +25,13 @@ Create `.env` from `.env.example` and set:
 
 ### Validate the database
 
+npm
+```bash
+npm run prisma:validate - Valida tu schema de Prisma
+npm run prisma:migrate - Corre las migraciones
+npm run prisma:seed - Siembra la base de datos
+```
+pnpn
 ```bash
 pnpm prisma validate
 pnpm prisma migrate dev --name init-primas
