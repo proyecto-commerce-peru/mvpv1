@@ -30,6 +30,7 @@ npm
 npm run prisma:validate - Valida tu schema de Prisma
 npm run prisma:migrate - Corre las migraciones
 npm run prisma:seed - Siembra la base de datos
+npx prisma db seed
 ```
 pnpn
 ```bash
