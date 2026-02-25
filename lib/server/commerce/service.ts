@@ -465,3 +465,120 @@ export async function placeOrderFromCart(input: {
     return order;
   });
 }
+
+export async function getOrderById(tenantId: string, id: string) {
+  const order = await prisma.order.findFirst({ where: { id, tenant_id: tenantId } });
+  if (!order) {
+    throw new ApiError(404, "ORDER_NOT_FOUND", "Order not found");
+  }
+  return order;
+}
+
+export async function updateOrder(tenantId: string, id: string, input: {
+  status?: string;
+  notes?: string | null;
+}) {
+  await getOrderById(tenantId, id);
+  return prisma.order.update({
+    where: { id },
+    data: {
+      status: input.status,
+      notes: input.notes === undefined ? undefined : input.notes,
+      updated_at: new Date(),
+    },
+  });
+}
+
+export async function listOrderItems(tenantId: string, orderId: string, limit: number, cursor?: string) {
+  const order = await prisma.order.findFirst({ where: { id: orderId, tenant_id: tenantId }, select: { id: true } });
+  if (!order) {
+    throw new ApiError(404, "ORDER_NOT_FOUND", "Order not found");
+  }
+
+  const items = await prisma.orderItem.findMany({
+    where: {
+      tenant_id: tenantId,
+      order_id: orderId,
+      ...cursorWhere(cursor),
+    },
+    orderBy: [{ created_at: "desc" }, { id: "desc" }],
+    take: limit + 1,
+  });
+
+  return page(items, limit);
+}
+
+export async function listFulfillmentsByOrder(tenantId: string, orderId: string, limit: number, cursor?: string) {
+  const order = await prisma.order.findFirst({ where: { id: orderId, tenant_id: tenantId }, select: { id: true } });
+  if (!order) {
+    throw new ApiError(404, "ORDER_NOT_FOUND", "Order not found");
+  }
+
+  const items = await prisma.fulfillment.findMany({
+    where: {
+      tenant_id: tenantId,
+      order_id: orderId,
+      ...cursorWhere(cursor),
+    },
+    orderBy: [{ created_at: "desc" }, { id: "desc" }],
+    take: limit + 1,
+  });
+
+  return page(items, limit);
+}
+
+export async function createFulfillment(input: {
+  tenantId: string;
+  orderId: string;
+  status?: string;
+  carrier?: string;
+  trackingCode?: string;
+  shippedAt?: Date;
+  deliveredAt?: Date;
+}) {
+  const order = await prisma.order.findFirst({ where: { id: input.orderId, tenant_id: input.tenantId }, select: { id: true } });
+  if (!order) {
+    throw new ApiError(404, "ORDER_NOT_FOUND", "Order not found");
+  }
+
+  const now = new Date();
+  return prisma.fulfillment.create({
+    data: {
+      id: crypto.randomUUID(),
+      tenant_id: input.tenantId,
+      order_id: input.orderId,
+      status: input.status ?? "PENDING",
+      carrier: input.carrier,
+      tracking_code: input.trackingCode,
+      shipped_at: input.shippedAt,
+      delivered_at: input.deliveredAt,
+      created_at: now,
+      updated_at: now,
+    },
+  });
+}
+
+export async function updateFulfillment(tenantId: string, id: string, input: {
+  status?: string;
+  carrier?: string | null;
+  trackingCode?: string | null;
+  shippedAt?: Date | null;
+  deliveredAt?: Date | null;
+}) {
+  const existing = await prisma.fulfillment.findFirst({ where: { id, tenant_id: tenantId }, select: { id: true } });
+  if (!existing) {
+    throw new ApiError(404, "FULFILLMENT_NOT_FOUND", "Fulfillment not found");
+  }
+
+  return prisma.fulfillment.update({
+    where: { id },
+    data: {
+      status: input.status,
+      carrier: input.carrier === undefined ? undefined : input.carrier,
+      tracking_code: input.trackingCode === undefined ? undefined : input.trackingCode,
+      shipped_at: input.shippedAt === undefined ? undefined : input.shippedAt,
+      delivered_at: input.deliveredAt === undefined ? undefined : input.deliveredAt,
+      updated_at: new Date(),
+    },
+  });
+}

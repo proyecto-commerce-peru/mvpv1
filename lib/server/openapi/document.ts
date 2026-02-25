@@ -28,7 +28,12 @@ export const openApiDocument = {
   tags: [
     { name: "Auth" },
     { name: "Users" },
+    { name: "Tenancy" },
     { name: "Catalog" },
+    { name: "Memberships" },
+    { name: "Promotions" },
+    { name: "Inventory" },
+    { name: "Payments" },
     { name: "Customers" },
     { name: "WhatsApp" },
     { name: "Commerce" },
@@ -369,6 +374,179 @@ export const openApiDocument = {
     },
     "/api/v1/stock/reconcile-reservations": {
       post: { tags: ["Commerce"], summary: "Release expired stock reservations", parameters: [] },
+    },
+
+    "/api/v1/tenants": {
+      get: { tags: ["Tenancy"], summary: "List tenant (scoped)", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Tenancy"], summary: "Create tenant", parameters: [] },
+    },
+    "/api/v1/tenants/{id}": {
+      get: { tags: ["Tenancy"], summary: "Get tenant", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Tenancy"], summary: "Update tenant", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/tenant-settings": {
+      get: { tags: ["Tenancy"], summary: "List tenant settings", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Tenancy"], summary: "Create tenant setting", parameters: [] },
+    },
+    "/api/v1/tenant-settings/{id}": {
+      patch: { tags: ["Tenancy"], summary: "Update tenant setting", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Tenancy"], summary: "Delete tenant setting", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/stores": {
+      get: { tags: ["Tenancy"], summary: "List stores", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Tenancy"], summary: "Create store", parameters: [] },
+    },
+    "/api/v1/stores/{id}": {
+      get: { tags: ["Tenancy"], summary: "Get store", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Tenancy"], summary: "Update store", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/tenant-domains": {
+      get: { tags: ["Tenancy"], summary: "List tenant domains", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Tenancy"], summary: "Create tenant domain", parameters: [] },
+    },
+    "/api/v1/tenant-domains/{id}/verify": {
+      post: { tags: ["Tenancy"], summary: "Verify tenant domain", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+
+    "/api/v1/stock/locations": {
+      get: { tags: ["Inventory"], summary: "List inventory locations", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Inventory"], summary: "Create inventory location", parameters: [] },
+    },
+    "/api/v1/stock/locations/{id}": {
+      patch: { tags: ["Inventory"], summary: "Update inventory location", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/stock/items": {
+      get: { tags: ["Inventory"], summary: "List stock items", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Inventory"], summary: "Create stock item", parameters: [] },
+    },
+    "/api/v1/stock/items/{id}": {
+      get: { tags: ["Inventory"], summary: "Get stock item", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Inventory"], summary: "Update stock item", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/stock/balances": {
+      get: { tags: ["Inventory"], summary: "List stock balances", parameters: [limitParam, cursorParam] },
+    },
+    "/api/v1/stock/movements": {
+      get: { tags: ["Inventory"], summary: "List stock movements", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Inventory"], summary: "Create stock movement", parameters: [] },
+    },
+
+    "/api/v1/orders/{id}": {
+      get: { tags: ["Commerce"], summary: "Get order", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Commerce"], summary: "Update order", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/orders/{id}/items": {
+      get: { tags: ["Commerce"], summary: "List order items", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }, limitParam, cursorParam] },
+    },
+    "/api/v1/orders/{id}/fulfillments": {
+      get: { tags: ["Commerce"], summary: "List order fulfillments", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }, limitParam, cursorParam] },
+      post: { tags: ["Commerce"], summary: "Create fulfillment", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/fulfillments/{id}": {
+      patch: { tags: ["Commerce"], summary: "Update fulfillment", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+
+    "/api/v1/payments/methods": {
+      get: { tags: ["Payments"], summary: "List payment methods", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Payments"], summary: "Create payment method", parameters: [] },
+    },
+    "/api/v1/payments/methods/{id}": {
+      patch: { tags: ["Payments"], summary: "Update payment method", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/payments": {
+      get: { tags: ["Payments"], summary: "List payments", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Payments"], summary: "Create payment", parameters: [] },
+    },
+    "/api/v1/payments/{id}": {
+      get: { tags: ["Payments"], summary: "Get payment", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Payments"], summary: "Update payment", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+
+    "/api/v1/catalog/categories/{id}": {
+      get: { tags: ["Catalog"], summary: "Get category", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Catalog"], summary: "Update category", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Catalog"], summary: "Delete category", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/catalog/store-offerings/{id}": {
+      get: { tags: ["Catalog"], summary: "Get offering", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Catalog"], summary: "Update offering", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Catalog"], summary: "Delete offering", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/catalog/store-variants/{id}": {
+      get: { tags: ["Catalog"], summary: "Get variant", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Catalog"], summary: "Update variant", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Catalog"], summary: "Delete variant", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/catalog/prices/{id}": {
+      get: { tags: ["Catalog"], summary: "Get price", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Catalog"], summary: "Update price", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Catalog"], summary: "Delete price", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/catalog/catalogs": {
+      get: { tags: ["Catalog"], summary: "List catalogs", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Catalog"], summary: "Create catalog", parameters: [] },
+    },
+    "/api/v1/catalog/catalogs/{id}": {
+      patch: { tags: ["Catalog"], summary: "Update catalog", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/catalog/price-lists": {
+      get: { tags: ["Catalog"], summary: "List price lists", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Catalog"], summary: "Create price list", parameters: [] },
+    },
+    "/api/v1/catalog/price-lists/{id}": {
+      patch: { tags: ["Catalog"], summary: "Update price list", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Catalog"], summary: "Delete price list", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+
+    "/api/v1/coupons": {
+      get: { tags: ["Promotions"], summary: "List coupons", parameters: [limitParam, cursorParam] },
+      post: { tags: ["Promotions"], summary: "Create coupon", parameters: [] },
+    },
+    "/api/v1/coupons/{id}": {
+      get: { tags: ["Promotions"], summary: "Get coupon", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      patch: { tags: ["Promotions"], summary: "Update coupon", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      delete: { tags: ["Promotions"], summary: "Delete coupon", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/coupons/{id}/rules": {
+      get: { tags: ["Promotions"], summary: "List coupon rules", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      post: { tags: ["Promotions"], summary: "Create coupon rule", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/coupons/{id}/rules/{ruleId}": {
+      patch: {
+        tags: ["Promotions"],
+        summary: "Update coupon rule",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          { name: "ruleId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        ],
+      },
+      delete: {
+        tags: ["Promotions"],
+        summary: "Delete coupon rule",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          { name: "ruleId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        ],
+      },
+    },
+    "/api/v1/catalog/store-offerings/{id}/membership-plan": {
+      get: { tags: ["Memberships"], summary: "Get membership plan by offering", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+      put: { tags: ["Memberships"], summary: "Upsert membership plan by offering", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/customers/{id}/memberships": {
+      get: {
+        tags: ["Memberships"],
+        summary: "List customer memberships",
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          limitParam,
+          cursorParam,
+        ],
+      },
+      post: { tags: ["Memberships"], summary: "Create customer membership", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
+    },
+    "/api/v1/customer-memberships/{id}": {
+      patch: { tags: ["Memberships"], summary: "Update customer membership", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }] },
     },
 
     "/api/v1/reports": {

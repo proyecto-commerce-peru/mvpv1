@@ -13,7 +13,7 @@
         "prisma:migrate:deploy": "prisma migrate deploy",
         "prisma:reset": "prisma migrate reset --force",
         "prisma:sqlite:migrate": "DATABASE_URL=file:./primas.db prisma migrate dev --schema prisma/schema.sqlite.prisma --name init-primas",
-        "//": "prisma db execute --schema prisma/schema.prisma --file databases/seed_primas.sql",
+        "prisma:seed2": "prisma db execute --schema prisma/schema.prisma --file databases/seed_primas.sql",
         "prisma:seed": "tsx prisma/seed.ts",
         "test": "jest --runInBand",
         "test:watch": "jest --watch"
