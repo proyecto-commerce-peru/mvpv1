@@ -1,0 +1,1 @@
+process.env.AUTH_TOKEN_SECRET = process.env.AUTH_TOKEN_SECRET ?? "test-secret-123";
