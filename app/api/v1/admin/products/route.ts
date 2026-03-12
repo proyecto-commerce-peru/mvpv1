@@ -1,28 +1,14 @@
 import { NextResponse } from "next/server";
 
+import {
+  formatZodErrors,
+  productCreateSchema,
+} from "@/lib/schemas/products";
 import { mapOfferingToProduct } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { getDefaultCatalogId, getDefaultTenantId } from "@/lib/tenant";
 
 const PRODUCT_TYPE = "PRODUCT";
-const ALLOWED_STATUSES = new Set(["ACTIVE", "INACTIVE"]);
-
-type ProductPayload = {
-  title?: string;
-  description?: string | null;
-  status?: string;
-  handle?: string;
-  coverImageUrl?: string | null;
-  currencyCode?: string;
-  price?: number;
-  sku?: string | null;
-};
-
-type ValidationErrorDetail = {
-  field: string;
-  message: string;
-};
-
 function jsonError(
   status: number,
   error: string,
@@ -31,84 +17,6 @@ function jsonError(
 ) {
   return NextResponse.json({ error, message, details }, { status });
 }
-
-function parsePrice(value: unknown): number | undefined {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-  const numberValue =
-    typeof value === "number" ? value : Number.parseFloat(String(value));
-  if (Number.isNaN(numberValue)) {
-    return undefined;
-  }
-  return numberValue;
-}
-
-function normalizePayload(
-  body: Record<string, unknown>,
-  requireAll: boolean
-): { data: ProductPayload; errors: ValidationErrorDetail[] } {
-  const errors: ValidationErrorDetail[] = [];
-  const title = typeof body.title === "string" ? body.title.trim() : undefined;
-  const handle = typeof body.handle === "string" ? body.handle.trim() : undefined;
-  const status =
-    typeof body.status === "string" ? body.status.trim().toUpperCase() : undefined;
-  const description =
-    typeof body.description === "string" ? body.description.trim() : null;
-  const coverImageUrl =
-    typeof body.coverImageUrl === "string" ? body.coverImageUrl.trim() : null;
-  const currencyCode =
-    typeof body.currencyCode === "string"
-      ? body.currencyCode.trim().toUpperCase()
-      : undefined;
-  const price = parsePrice(body.price);
-  const sku = typeof body.sku === "string" ? body.sku.trim() : null;
-
-  if (requireAll || body.title !== undefined) {
-    if (!title) {
-      errors.push({ field: "title", message: "Title is required." });
-    } else if (title.length > 180) {
-      errors.push({ field: "title", message: "Title is too long." });
-    }
-  }
-
-  if (requireAll || body.handle !== undefined) {
-    if (!handle) {
-      errors.push({ field: "handle", message: "Handle is required." });
-    } else if (handle.length > 180) {
-      errors.push({ field: "handle", message: "Handle is too long." });
-    }
-  }
-
-  if (requireAll || body.status !== undefined) {
-    if (status && !ALLOWED_STATUSES.has(status)) {
-      errors.push({ field: "status", message: "Invalid status value." });
-    }
-  }
-
-  if (requireAll || body.price !== undefined) {
-    if (price === undefined) {
-      errors.push({ field: "price", message: "Price must be a number." });
-    } else if (price < 0) {
-      errors.push({ field: "price", message: "Price must be >= 0." });
-    }
-  }
-
-  return {
-    data: {
-      title,
-      description,
-      status,
-      handle,
-      coverImageUrl,
-      currencyCode,
-      price,
-      sku,
-    },
-    errors,
-  };
-}
-
 
 async function assertHandleAvailable(
   tenantId: string,
@@ -168,19 +76,19 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Record<string, unknown>;
-    const { data, errors } = normalizePayload(body, true);
+    const parsed = productCreateSchema.safeParse(body);
 
-    if (errors.length > 0) {
+    if (!parsed.success) {
       return jsonError(422, "ValidationError", "Request validation failed.", {
-        errors,
+        errors: formatZodErrors(parsed.error),
       });
     }
 
     const tenantId = await getDefaultTenantId();
     const catalogId = await getDefaultCatalogId(tenantId);
 
-    if (data.handle) {
-      await assertHandleAvailable(tenantId, data.handle);
+    if (parsed.data.handle) {
+      await assertHandleAvailable(tenantId, parsed.data.handle);
     }
 
     const now = new Date();
@@ -190,15 +98,15 @@ export async function POST(request: Request) {
         tenant_id: tenantId,
         catalog_id: catalogId,
         type: PRODUCT_TYPE,
-        title: data.title ?? "Untitled",
-        description: data.description,
-        status: data.status ?? "ACTIVE",
-        handle: data.handle,
-        cover_image_url: data.coverImageUrl,
-        currency_code: data.currencyCode ?? "PEN",
+        title: parsed.data.title ?? "Untitled",
+        description: parsed.data.description,
+        status: parsed.data.status ?? "ACTIVE",
+        handle: parsed.data.handle,
+        cover_image_url: parsed.data.coverImageUrl,
+        currency_code: parsed.data.currencyCode ?? "PEN",
         base_data: {
-          price: data.price ?? 0,
-          sku: data.sku,
+          price: parsed.data.price,
+          sku: parsed.data.sku,
         },
         created_at: now,
         updated_at: now,

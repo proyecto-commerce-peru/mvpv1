@@ -1,28 +1,14 @@
 import { NextResponse } from "next/server";
 
+import {
+  formatZodErrors,
+  productUpdateSchema,
+} from "@/lib/schemas/products";
 import { mapOfferingToProduct } from "@/lib/products";
 import { prisma } from "@/lib/prisma";
 import { getDefaultTenantId } from "@/lib/tenant";
 
 const PRODUCT_TYPE = "PRODUCT";
-const ALLOWED_STATUSES = new Set(["ACTIVE", "INACTIVE"]);
-
-type ProductPatch = {
-  title?: string;
-  description?: string | null;
-  status?: string;
-  handle?: string;
-  coverImageUrl?: string | null;
-  currencyCode?: string;
-  price?: number;
-  sku?: string | null;
-};
-
-type ValidationErrorDetail = {
-  field: string;
-  message: string;
-};
-
 function jsonError(
   status: number,
   error: string,
@@ -31,81 +17,6 @@ function jsonError(
 ) {
   return NextResponse.json({ error, message, details }, { status });
 }
-
-function parsePrice(value: unknown): number | undefined {
-  if (value === null || value === undefined || value === "") {
-    return undefined;
-  }
-  const numberValue =
-    typeof value === "number" ? value : Number.parseFloat(String(value));
-  if (Number.isNaN(numberValue)) {
-    return undefined;
-  }
-  return numberValue;
-}
-
-function normalizePatch(
-  body: Record<string, unknown>
-): { data: ProductPatch; errors: ValidationErrorDetail[] } {
-  const errors: ValidationErrorDetail[] = [];
-  const title = typeof body.title === "string" ? body.title.trim() : undefined;
-  const handle = typeof body.handle === "string" ? body.handle.trim() : undefined;
-  const status =
-    typeof body.status === "string" ? body.status.trim().toUpperCase() : undefined;
-  const description =
-    typeof body.description === "string" ? body.description.trim() : null;
-  const coverImageUrl =
-    typeof body.coverImageUrl === "string" ? body.coverImageUrl.trim() : null;
-  const currencyCode =
-    typeof body.currencyCode === "string"
-      ? body.currencyCode.trim().toUpperCase()
-      : undefined;
-  const price = parsePrice(body.price);
-  const sku = typeof body.sku === "string" ? body.sku.trim() : null;
-
-  if (body.title !== undefined) {
-    if (!title) {
-      errors.push({ field: "title", message: "Title cannot be empty." });
-    } else if (title.length > 180) {
-      errors.push({ field: "title", message: "Title is too long." });
-    }
-  }
-
-  if (body.handle !== undefined) {
-    if (!handle) {
-      errors.push({ field: "handle", message: "Handle cannot be empty." });
-    } else if (handle.length > 180) {
-      errors.push({ field: "handle", message: "Handle is too long." });
-    }
-  }
-
-  if (body.status !== undefined && status && !ALLOWED_STATUSES.has(status)) {
-    errors.push({ field: "status", message: "Invalid status value." });
-  }
-
-  if (body.price !== undefined) {
-    if (price === undefined) {
-      errors.push({ field: "price", message: "Price must be a number." });
-    } else if (price < 0) {
-      errors.push({ field: "price", message: "Price must be >= 0." });
-    }
-  }
-
-  return {
-    data: {
-      title,
-      description,
-      status,
-      handle,
-      coverImageUrl,
-      currencyCode,
-      price,
-      sku,
-    },
-    errors,
-  };
-}
-
 
 async function assertHandleAvailable(
   tenantId: string,
@@ -178,11 +89,11 @@ export async function PATCH(
     const tenantId = await getDefaultTenantId();
     const { id } = await context.params;
     const body = (await request.json()) as Record<string, unknown>;
-    const { data, errors } = normalizePatch(body);
+    const parsed = productUpdateSchema.safeParse(body);
 
-    if (errors.length > 0) {
+    if (!parsed.success) {
       return jsonError(422, "ValidationError", "Request validation failed.", {
-        errors,
+        errors: formatZodErrors(parsed.error),
       });
     }
 
@@ -203,26 +114,26 @@ export async function PATCH(
       return jsonError(404, "NotFound", "Product not found.");
     }
 
-    if (data.handle) {
-      await assertHandleAvailable(tenantId, data.handle, id);
+    if (parsed.data.handle) {
+      await assertHandleAvailable(tenantId, parsed.data.handle, id);
     }
 
     const baseData = (existing.base_data ?? {}) as Record<string, unknown>;
     const nextBaseData = {
       ...baseData,
-      ...(data.price !== undefined ? { price: data.price } : {}),
-      ...(data.sku !== undefined ? { sku: data.sku } : {}),
+      ...(parsed.data.price !== undefined ? { price: parsed.data.price } : {}),
+      ...(parsed.data.sku !== undefined ? { sku: parsed.data.sku } : {}),
     };
 
     const updated = await prisma.storeOffering.update({
       where: { id },
       data: {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        handle: data.handle,
-        cover_image_url: data.coverImageUrl,
-        currency_code: data.currencyCode,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        status: parsed.data.status,
+        handle: parsed.data.handle,
+        cover_image_url: parsed.data.coverImageUrl,
+        currency_code: parsed.data.currencyCode,
         base_data: nextBaseData,
         updated_at: new Date(),
       },

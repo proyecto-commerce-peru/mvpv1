@@ -16,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  formatZodErrors,
+  productCreateSchema,
+  productUpdateSchema,
+  type ProductCreateInput,
+  type ProductUpdateInput,
+} from "@/lib/schemas/products";
 import { cn } from "@/lib/utils";
 
 type Product = {
@@ -145,9 +152,22 @@ function buildPayload(state: ProductFormState) {
     handle: state.handle.trim(),
     coverImageUrl: state.coverImageUrl.trim() || null,
     currencyCode: state.currencyCode.trim() || "PEN",
-    price: state.price === "" ? null : Number.parseFloat(state.price),
+    price: state.price,
     sku: state.sku.trim() || null,
   };
+}
+
+function toFieldErrors(error: unknown) {
+  if (error && typeof error === "object" && "issues" in error) {
+    return formatZodErrors(error as Parameters<typeof formatZodErrors>[0]).reduce(
+      (acc, issue) => {
+        acc[issue.field] = issue.message;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+  }
+  return {};
 }
 
 export default function ProductsClient({
@@ -202,13 +222,25 @@ export default function ProductsClient({
     setFormErrors({});
     setFormMessage(null);
     const payload = buildPayload(formState);
+    const schema =
+      dialogMode === "create" ? productCreateSchema : productUpdateSchema;
+    const parsed = schema.safeParse(payload);
+
+    if (!parsed.success) {
+      setFormErrors(toFieldErrors(parsed.error));
+      setFormMessage("Fix the highlighted fields.");
+      return;
+    }
 
     try {
       if (dialogMode === "create") {
-        const created = await createProduct(payload);
+        const created = await createProduct(parsed.data as ProductCreateInput);
         setProducts((prev) => [created, ...prev]);
       } else if (activeProductId) {
-        const updated = await updateProduct(activeProductId, payload);
+        const updated = await updateProduct(
+          activeProductId,
+          parsed.data as ProductUpdateInput
+        );
         setProducts((prev) =>
           [updated, ...prev.filter((item) => item.id !== updated.id)].sort(
             (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
