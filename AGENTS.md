@@ -128,6 +128,11 @@ Repo root: /home/cristhianjhl/crissis16/code/seller-bot-v1.
 - Suggested pattern: `pnpm test -- <pattern>` for single test; document in this file when added.
 - For lint-only validation, `pnpm lint` is the gate today.
 
+### Added tests (products module)
+- Run all tests: `pnpm test`
+- Watch mode: `pnpm test:watch`
+- Single test file: `pnpm test -- tests/api/products.test.ts`
+
 ## Adding dependencies
 - Use `pnpm add <pkg>` / `pnpm add -D <pkg>`; keep versions consistent with React 19/Next 16.
 - For UI libs, ensure they play nicely with RSC/client boundaries; tree-shake where possible.
