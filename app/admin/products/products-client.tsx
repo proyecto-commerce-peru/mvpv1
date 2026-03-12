@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,9 @@ export default function ProductsClient({
   const [pending, startTransition] = React.useTransition();
   const [deleteTarget, setDeleteTarget] = React.useState<Product | null>(null);
   const [deletePending, setDeletePending] = React.useState(false);
+  const [openEditorAfterCreate, setOpenEditorAfterCreate] = React.useState(false);
+  const [uploadFile, setUploadFile] = React.useState<File | null>(null);
+  const router = useRouter();
 
   const productsCountLabel = `${products.length} product${products.length === 1 ? "" : "s"}`;
 
@@ -194,6 +198,8 @@ export default function ProductsClient({
     setFormErrors({});
     setFormMessage(null);
     setActiveProductId(null);
+    setOpenEditorAfterCreate(false);
+    setUploadFile(null);
   }, []);
 
   const openCreate = React.useCallback(() => {
@@ -209,6 +215,7 @@ export default function ProductsClient({
       setFormState(toFormState(product));
       setFormErrors({});
       setFormMessage(null);
+      setUploadFile(null);
       setDialogOpen(true);
     },
     []
@@ -236,7 +243,29 @@ export default function ProductsClient({
     try {
       if (dialogMode === "create") {
         const created = await createProduct(parsed.data as ProductCreateInput);
+        if (uploadFile) {
+          const formData = new FormData();
+          formData.append("file", uploadFile);
+          formData.append("offeringId", created.id);
+          const uploadResponse = await fetch("/api/v1/admin/uploads", {
+            method: "POST",
+            body: formData,
+          });
+          if (uploadResponse.ok) {
+            const image = (await uploadResponse.json()) as { url: string };
+            await fetch(`/api/v1/admin/products/${created.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ coverImageUrl: image.url }),
+            });
+            created.coverImageUrl = image.url;
+          }
+        }
         setProducts((prev) => [created, ...prev]);
+        if (openEditorAfterCreate) {
+          router.push(`/admin/products/${created.id}`);
+          return;
+        }
       } else if (activeProductId) {
         const updated = await updateProduct(
           activeProductId,
@@ -263,7 +292,16 @@ export default function ProductsClient({
       setFormErrors(nextErrors);
       setFormMessage(apiError.message ?? "Something went wrong.");
     }
-  }, [activeProductId, dialogMode, formState, refreshProducts, resetForm]);
+  }, [
+    activeProductId,
+    dialogMode,
+    formState,
+    refreshProducts,
+    resetForm,
+    openEditorAfterCreate,
+    uploadFile,
+    router,
+  ]);
 
   const confirmDelete = React.useCallback((product: Product) => {
     setDeleteTarget(product);
@@ -357,12 +395,10 @@ export default function ProductsClient({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => openEdit(product)}
-                      >
-                        <Pencil className="size-3.5" />
+                      <Button asChild variant="outline" size="icon-sm">
+                        <Link href={`/admin/products/${product.id}`}>
+                          <Pencil className="size-3.5" />
+                        </Link>
                       </Button>
                       <Button
                         variant="destructive"
@@ -401,6 +437,7 @@ export default function ProductsClient({
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
+                placeholder="Classic Leather Belt"
                 value={formState.title}
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, title: event.target.value }))
@@ -415,6 +452,7 @@ export default function ProductsClient({
               <Label htmlFor="handle">Handle</Label>
               <Input
                 id="handle"
+                placeholder="classic-leather-belt"
                 value={formState.handle}
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, handle: event.target.value }))
@@ -430,6 +468,7 @@ export default function ProductsClient({
               <Input
                 id="price"
                 inputMode="decimal"
+                placeholder="59.00"
                 value={formState.price}
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, price: event.target.value }))
@@ -444,6 +483,7 @@ export default function ProductsClient({
               <Label htmlFor="sku">SKU</Label>
               <Input
                 id="sku"
+                placeholder="SKU-LEATHER-001"
                 value={formState.sku}
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, sku: event.target.value }))
@@ -462,7 +502,7 @@ export default function ProductsClient({
                     status: event.target.value as "ACTIVE" | "INACTIVE",
                   }))
                 }
-                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="h-9 w-full rounded-sm border border-border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
               >
                 <option value="ACTIVE">Active</option>
                 <option value="INACTIVE">Inactive</option>
@@ -473,6 +513,7 @@ export default function ProductsClient({
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                placeholder="Minimal leather belt with brushed buckle."
                 value={formState.description}
                 onChange={(event) =>
                   setFormState((prev) => ({
@@ -482,11 +523,11 @@ export default function ProductsClient({
                 }
               />
             </div>
-
             <div className="grid gap-2">
               <Label htmlFor="coverImageUrl">Cover image URL</Label>
               <Input
                 id="coverImageUrl"
+                placeholder="https://cdn.example.com/products/belt.jpg"
                 value={formState.coverImageUrl}
                 onChange={(event) =>
                   setFormState((prev) => ({
@@ -496,6 +537,35 @@ export default function ProductsClient({
                 }
               />
             </div>
+            {dialogMode === "create" ? (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="coverUpload">Upload cover image</Label>
+                  <Input
+                    id="coverUpload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setUploadFile(file);
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Uploads after you save, then sets it as the cover image.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={openEditorAfterCreate}
+                    onChange={(event) =>
+                      setOpenEditorAfterCreate(event.target.checked)
+                    }
+                  />
+                  Open full editor after create
+                </label>
+              </>
+            ) : null}
           </div>
 
           <DialogFooter>

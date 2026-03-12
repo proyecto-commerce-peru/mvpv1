@@ -205,6 +205,49 @@ export default function ProductEditorClient({
     setMessage(response.ok ? "Categories saved." : "Failed to save categories.");
   };
 
+  const saveAll = async () => {
+    setSaving(true);
+    setMessage(null);
+
+    const detailsResponse = await fetch(`/api/v1/admin/products/${product.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: details.title,
+        handle: details.handle,
+        status: details.status,
+        description: details.description,
+        coverImageUrl: details.coverImageUrl,
+      }),
+    });
+
+    const priceResponse = await fetch(`/api/v1/admin/products/${product.id}/prices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        listPrice: priceState.listPrice,
+        salePrice: priceState.salePrice,
+      }),
+    });
+
+    const categoriesResponse = await fetch(
+      `/api/v1/admin/products/${product.id}/categories`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryIds }),
+      }
+    );
+
+    setSaving(false);
+
+    if (detailsResponse.ok && priceResponse.ok && categoriesResponse.ok) {
+      setMessage("All sections saved.");
+    } else {
+      setMessage("Failed to save all sections.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -220,9 +263,15 @@ export default function ProductEditorClient({
             <p className="text-sm text-muted-foreground">Edit product details</p>
           </div>
         </div>
-        {message ? (
-          <p className="text-xs text-muted-foreground">{message}</p>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {message ? (
+            <p className="text-xs text-muted-foreground">{message}</p>
+          ) : null}
+          <Button onClick={saveAll} disabled={saving}>
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            Save All
+          </Button>
+        </div>
       </div>
 
       <section className="rounded-sm border border-border bg-background p-6">
@@ -238,6 +287,7 @@ export default function ProductEditorClient({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
+              placeholder="Classic Leather Belt"
               value={details.title}
               onChange={(event) =>
                 setDetails((prev) => ({ ...prev, title: event.target.value }))
@@ -248,6 +298,7 @@ export default function ProductEditorClient({
             <Label htmlFor="handle">Handle</Label>
             <Input
               id="handle"
+              placeholder="classic-leather-belt"
               value={details.handle}
               onChange={(event) =>
                 setDetails((prev) => ({ ...prev, handle: event.target.value }))
@@ -272,6 +323,7 @@ export default function ProductEditorClient({
             <Label htmlFor="cover">Cover image URL</Label>
             <Input
               id="cover"
+              placeholder="https://cdn.example.com/products/belt.jpg"
               value={details.coverImageUrl}
               onChange={(event) =>
                 setDetails((prev) => ({
@@ -285,6 +337,7 @@ export default function ProductEditorClient({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
+              placeholder="Minimal leather belt with brushed buckle."
               value={details.description}
               onChange={(event) =>
                 setDetails((prev) => ({
@@ -310,6 +363,7 @@ export default function ProductEditorClient({
             <Label htmlFor="listPrice">List price</Label>
             <Input
               id="listPrice"
+              placeholder="59.00"
               value={priceState.listPrice}
               onChange={(event) =>
                 setPriceState((prev) => ({ ...prev, listPrice: event.target.value }))
@@ -320,6 +374,7 @@ export default function ProductEditorClient({
             <Label htmlFor="salePrice">Sale price</Label>
             <Input
               id="salePrice"
+              placeholder="49.00"
               value={priceState.salePrice}
               onChange={(event) =>
                 setPriceState((prev) => ({ ...prev, salePrice: event.target.value }))
@@ -368,21 +423,22 @@ export default function ProductEditorClient({
               <div className="flex-1 min-w-[200px]">
                 <p className="text-xs text-muted-foreground">{image.url}</p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
-                  <Input
-                    value={image.altText ?? ""}
-                    placeholder="Alt text"
-                    onChange={(event) =>
-                      updateImage(image, image.sortOrder, event.target.value)
-                    }
-                  />
-                  <Input
-                    value={image.sortOrder.toString()}
-                    inputMode="numeric"
-                    onChange={(event) => {
-                      const next = Number.parseInt(event.target.value, 10) || 0;
-                      updateImage(image, next, image.altText ?? "");
-                    }}
-                  />
+                <Input
+                  value={image.altText ?? ""}
+                  placeholder="Alt text"
+                  onChange={(event) =>
+                    updateImage(image, image.sortOrder, event.target.value)
+                  }
+                />
+                <Input
+                  value={image.sortOrder.toString()}
+                  inputMode="numeric"
+                  placeholder="0"
+                  onChange={(event) => {
+                    const next = Number.parseInt(event.target.value, 10) || 0;
+                    updateImage(image, next, image.altText ?? "");
+                  }}
+                />
                 </div>
               </div>
               <Button variant="destructive" size="sm" onClick={() => deleteImage(image.id)}>

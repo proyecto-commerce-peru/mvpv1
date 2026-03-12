@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Boxes, LayoutGrid, Package } from "lucide-react";
+import { Boxes, LayoutGrid, Package, Tags } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin", label: "Overview", icon: LayoutGrid },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/categories", label: "Categories", icon: Tags },
 ];
 
 export default function AdminLayout({
@@ -64,7 +65,9 @@ export default function AdminLayout({
             </span>
           </div>
         </header>
-        <main className="flex-1 space-y-6 px-6 py-6">{children}</main>
+        <main className="flex-1 space-y-6 px-6 py-6">
+          <div className="w-full max-w-[1020px]">{children}</div>
+        </main>
       </div>
     </div>
   );

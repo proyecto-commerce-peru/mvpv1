@@ -138,3 +138,36 @@ export const imageUpdateSchema = z.object({
 export const categoriesReplaceSchema = z.object({
   categoryIds: z.array(z.string().uuid()).default([]),
 });
+
+const intSchema = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined || value === "") {
+      return undefined;
+    }
+    if (typeof value === "number") {
+      return value;
+    }
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isNaN(parsed) ? value : parsed;
+  },
+  z.number().int().min(0, "Sort order must be >= 0.")
+);
+
+export const categoryBaseSchema = z.object({
+  name: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1, "Name is required.").max(140, "Name is too long.")
+  ),
+  slug: z.preprocess(
+    emptyToUndefined,
+    z.string().min(1, "Slug is required.").max(160, "Slug is too long.")
+  ).optional(),
+  sortOrder: intSchema.optional(),
+  isActive: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.boolean()
+  ).optional(),
+});
+
+export const categoryCreateSchema = categoryBaseSchema;
+export const categoryUpdateSchema = categoryBaseSchema.partial();
