@@ -31,3 +31,20 @@ export async function getDefaultCatalogId(tenantId: string): Promise<string> {
 
   return catalog.id;
 }
+
+export async function getDefaultPriceListId(
+  tenantId: string,
+  catalogId: string
+): Promise<string> {
+  const priceList = await prisma.priceList.findFirst({
+    select: { id: true },
+    where: { tenant_id: tenantId, catalog_id: catalogId },
+    orderBy: [{ is_default: "desc" }, { created_at: "asc" }],
+  });
+
+  if (!priceList) {
+    throw new Error("No price list found for catalog.");
+  }
+
+  return priceList.id;
+}

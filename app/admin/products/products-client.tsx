@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Check, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -323,7 +324,12 @@ export default function ProductsClient({
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="space-y-1">
-                      <p className="font-medium text-foreground">{product.title}</p>
+                      <Link
+                        href={`/admin/products/${product.id}`}
+                        className="font-medium text-foreground hover:underline"
+                      >
+                        {product.title}
+                      </Link>
                       <p className="text-xs text-muted-foreground">
                         {product.handle ?? "No handle"}
                       </p>

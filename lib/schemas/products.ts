@@ -103,3 +103,38 @@ export function formatZodErrors(error: z.ZodError) {
     message: issue.message,
   }));
 }
+
+const moneySchema = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined || value === "") {
+      return undefined;
+    }
+    if (typeof value === "number") {
+      return value;
+    }
+    const parsed = Number.parseFloat(String(value));
+    return Number.isNaN(parsed) ? value : parsed;
+  },
+  z.number({ message: "Amount must be a number." }).min(0, "Amount must be >= 0.")
+);
+
+export const priceUpsertSchema = z.object({
+  listPrice: moneySchema.optional(),
+  salePrice: moneySchema,
+  isActive: z.boolean().optional(),
+});
+
+export const imageCreateSchema = z.object({
+  url: z.string().url("Image URL must be valid."),
+  altText: z.string().max(160, "Alt text is too long.").optional().nullable(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+export const imageUpdateSchema = z.object({
+  altText: z.string().max(160, "Alt text is too long.").optional().nullable(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+
+export const categoriesReplaceSchema = z.object({
+  categoryIds: z.array(z.string().uuid()).default([]),
+});
