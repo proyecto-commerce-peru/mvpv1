@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 export default function AdminHomePage() {
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-border bg-background p-6 shadow-sm">
+      <section className="rounded-sm border border-border bg-background p-6">
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
           Admin overview
         </p>

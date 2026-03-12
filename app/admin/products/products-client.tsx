@@ -253,7 +253,7 @@ export default function ProductsClient({
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-background p-6 shadow-sm">
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-border bg-background p-6">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
             Products
@@ -267,7 +267,7 @@ export default function ProductsClient({
         </Button>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-border bg-background p-6 shadow-sm">
+      <section className="space-y-3 rounded-sm border border-border bg-background p-6">
         <Table>
           <TableHeader>
             <TableRow>
@@ -341,7 +341,7 @@ export default function ProductsClient({
           </TableBody>
         </Table>
         {formMessage ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <p className="rounded-sm border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {formMessage}
           </p>
         ) : null}
