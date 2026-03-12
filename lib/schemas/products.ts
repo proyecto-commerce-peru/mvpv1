@@ -34,10 +34,7 @@ const priceSchema = z.preprocess(
     return Number.isNaN(parsed) ? value : parsed;
   },
   z
-    .number({
-      required_error: "Price must be a number.",
-      invalid_type_error: "Price must be a number.",
-    })
+    .number()
     .min(0, "Price must be >= 0.")
 );
 
@@ -46,17 +43,11 @@ export const productStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 export const productBaseSchema = z.object({
   title: z.preprocess(
     emptyToUndefined,
-    z
-      .string({ required_error: "Title is required." })
-      .min(1, "Title is required.")
-      .max(180, "Title is too long.")
+    z.string().min(1, "Title is required.").max(180, "Title is too long.")
   ),
   handle: z.preprocess(
     emptyToUndefined,
-    z
-      .string({ required_error: "Handle is required." })
-      .min(1, "Handle is required.")
-      .max(180, "Handle is too long.")
+    z.string().min(1, "Handle is required.").max(180, "Handle is too long.")
   ),
   status: z.preprocess(
     upperValue,
@@ -76,9 +67,7 @@ export const productBaseSchema = z.object({
   ).optional(),
   currencyCode: z.preprocess(
     emptyToUndefined,
-    z
-      .string({ required_error: "Currency code is required." })
-      .length(3, "Currency code must be 3 letters.")
+    z.string().length(3, "Currency code must be 3 letters.")
   ).default("PEN"),
   price: priceSchema,
   sku: z.preprocess(
