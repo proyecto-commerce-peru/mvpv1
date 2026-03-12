@@ -253,12 +253,12 @@ export default function ProductsClient({
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-center justify-between gap-4">
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-background p-6 shadow-sm">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            Products registry
+            Products
           </p>
-          <h2 className="text-2xl font-semibold">Products</h2>
+          <h2 className="text-2xl font-semibold">Product catalog</h2>
           <p className="text-sm text-muted-foreground">{productsCountLabel}</p>
         </div>
         <Button onClick={openCreate} className="gap-2">
@@ -267,7 +267,7 @@ export default function ProductsClient({
         </Button>
       </section>
 
-      <section className="space-y-3">
+      <section className="space-y-3 rounded-lg border border-border bg-background p-6 shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -300,10 +300,10 @@ export default function ProductsClient({
                   <TableCell>
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium",
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
                         product.status === "ACTIVE"
                           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                          : "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-border bg-muted text-muted-foreground"
                       )}
                     >
                       <Check className="size-3" />
@@ -341,7 +341,7 @@ export default function ProductsClient({
           </TableBody>
         </Table>
         {formMessage ? (
-          <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             {formMessage}
           </p>
         ) : null}
