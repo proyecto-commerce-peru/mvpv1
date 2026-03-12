@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, Loader2, Save, UploadCloud } from "lucide-react";
 
@@ -355,8 +356,14 @@ export default function ProductEditorClient({
               key={image.id}
               className="flex flex-wrap items-center gap-3 rounded-sm border border-border p-3"
             >
-              <div className="h-12 w-12 overflow-hidden rounded-sm border border-border bg-muted">
-                <img src={image.url} alt={image.altText ?? ""} className="h-full w-full object-cover" />
+              <div className="relative h-12 w-12 overflow-hidden rounded-sm border border-border bg-muted">
+                <Image
+                  src={image.url}
+                  alt={image.altText ?? ""}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
               </div>
               <div className="flex-1 min-w-[200px]">
                 <p className="text-xs text-muted-foreground">{image.url}</p>
