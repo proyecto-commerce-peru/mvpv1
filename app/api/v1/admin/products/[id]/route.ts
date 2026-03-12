@@ -130,11 +130,11 @@ async function assertHandleAvailable(
 
 export async function GET(
   _request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const tenantId = await getDefaultTenantId();
-    const { id } = context.params;
+    const { id } = await context.params;
     const product = await prisma.storeOffering.findFirst({
       select: {
         id: true,
@@ -172,11 +172,11 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const tenantId = await getDefaultTenantId();
-    const { id } = context.params;
+    const { id } = await context.params;
     const body = (await request.json()) as Record<string, unknown>;
     const { data, errors } = normalizePatch(body);
 
@@ -260,11 +260,11 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const tenantId = await getDefaultTenantId();
-    const { id } = context.params;
+    const { id } = await context.params;
     const existing = await prisma.storeOffering.findFirst({
       select: { id: true },
       where: {

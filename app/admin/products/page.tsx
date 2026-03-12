@@ -7,6 +7,11 @@ export const dynamic = "force-dynamic";
 export default async function ProductsPage() {
   const tenantId = await getDefaultTenantId();
   const products = await listProducts(tenantId);
+  const serializedProducts = products.map((product) => ({
+    ...product,
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+  }));
 
-  return <ProductsClient initialProducts={products} />;
+  return <ProductsClient initialProducts={serializedProducts} />;
 }
