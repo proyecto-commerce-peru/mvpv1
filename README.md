@@ -31,6 +31,7 @@ npm run prisma:validate - Valida tu schema de Prisma
 npm run prisma:migrate - Corre las migraciones
 npm run prisma:seed - Siembra la base de datos
 npx prisma db seed
+npx prisma migrate reset --force -> PARA RESET DE DDBB
 ```
 pnpn
 ```bash
@@ -43,6 +44,15 @@ pnpm prisma migrate dev --name init-primas
 ```bash
 pnpm prisma:seed
 ```
+
+
+### Seed the database permissions
+
+```bash
+npm run prisma:seed:permissions
+```
+
+
 
 ## API v1
 
@@ -127,3 +137,37 @@ Unit tests include:
 - Outbox worker with retries/backoff for:
   - `whatsapp.message.send`
   - `whatsapp.webhook.process`
+
+
+## Archivos creados y proposito 10-03-2026
+- lib/auth.ts
+  - Instancia de better-auth con hooks onSignUp y onPasswordChange
+- lib/auth-client.ts
+  - Cliente de better-auth para componentes React
+- app/api/auth/[...all]/route.ts
+  - Handler de endpoints de sesión web
+- middleware.ts
+  - Único guardián: verifica sesión, inyecta x-tenant-id, redirige a onboarding si tenant es PENDING
+- lib/server/auth/permissions.ts
+  - getUserPermissions() — único lugar donde se resuelven permisos
+- lib/hooks/use-permission.ts
+  - usePermission() y usePermissions() para componentes cliente
+- app/api/internal/permissions/route.ts
+  - Endpoint interno para consultar permisos desde el cliente
+- app/api/internal/onboarding/route.ts
+  - Endpoint para completar datos del negocio
+- app/dashboard/onboarding/page.tsx
+  - Página post-registro para completar datos del tenant
+- prisma/seed-permissions.ts
+  - Seed idempotente de los 26 permisos y 3 roles del sistema
+
+
+
+# 1. Instalar better-auth
+npm install better-auth@latest
+
+# 2. Migrar la DB (crea las 4 tablas auth_*)
+npm run prisma:migrate
+
+# 3. Seed de permisos y roles del sistema
+npm run prisma:seed:permissions

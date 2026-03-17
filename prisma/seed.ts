@@ -16,8 +16,8 @@ const generateTenantData = () => ({
   timezone: 'America/Lima',
   currency_code: 'PEN',
   metadata: {},
-  created_at: now(),
-  updated_at: now(),
+  createdAt: now(),
+  updatedAt: now(),
 });
 
 const generateStoreData = (tenantId: string) => ({
@@ -31,12 +31,14 @@ const generateStoreData = (tenantId: string) => ({
 });
 
 const generateUserData = (tenantId: string) => ({
-  id: faker.string.uuid(),
+  id: faker.string.alphanumeric(32),
   tenant_id: tenantId,
   email: faker.internet.email(),
+  name: faker.person.fullName(),
   status: 'ACTIVE' as const,
-  created_at: now(),
-  updated_at: now(),
+  emailVerified: false,
+  createdAt: now(),
+  updatedAt: now(),
 });
 
 const generateUserProfileData = (tenantId: string, userId: string) => ({
@@ -149,9 +151,9 @@ const createCompleteTenant = async (index: number) => {
   });
 
   // Crear user profile
-  await prisma.userProfile.create({
-    data: generateUserProfileData(tenant.id, user.id),
-  });
+//  await prisma.userProfile.create({
+  //  data: generateUserProfileData(tenant.id, user.id),
+ // });
 
   // Crear price list
   const priceList = await prisma.priceList.create({

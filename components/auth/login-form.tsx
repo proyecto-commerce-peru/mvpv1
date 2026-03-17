@@ -17,11 +17,13 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -30,18 +32,30 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate login
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const { error: signInError } = await authClient.signIn.email({
+      email: formData.email,
+      password: formData.password,
+      callbackURL: "/dashboard",
+    });
 
-    setIsLoading(false);
+    if (signInError) {
+      setError("Email o contraseña incorrectos.");
+      setIsLoading(false);
+      return;
+    }
+
     router.push("/dashboard");
   };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    router.push("/dashboard");
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/dashboard",
+    });
+    setIsLoading(false);
   };
 
   return (
@@ -63,6 +77,12 @@ export function LoginForm() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <div className="rounded-md bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
         {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="email" className="text-sm text-muted-foreground">

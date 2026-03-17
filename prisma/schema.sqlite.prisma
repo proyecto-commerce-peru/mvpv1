@@ -18,8 +18,8 @@ model Tenant {
   timezone               String                   @default("America/Lima")
   currency_code          String                   @default("PEN")
   metadata               String?
-  created_at             DateTime
-  updated_at             DateTime
+  createdAt              DateTime                 @map("created_at")
+  updatedAt              DateTime                 @map("updated_at")
   deleted_at             DateTime?
   TenantSetting          TenantSetting[]
   TenantStore            TenantStore[]
@@ -82,7 +82,7 @@ model Tenant {
 
   @@index([status])
   @@index([country_code])
-  @@index([created_at])
+  @@index([createdAt])
   @@map("tenants")
 }
 
@@ -1188,7 +1188,7 @@ model WhatsappConversation {
   whatsappAccount   WhatsappAccount     @relation(fields: [whatsapp_account_id], references: [id])
   customer          Customer            @relation(fields: [customer_id], references: [id])
   WhatsappMessage   WhatsappMessage[]
-  ConversationOrder ConversationOrder[]
+  ConversationOrder  ConversationOrder[]
 
   @@index([tenant_id, whatsapp_account_id, customer_id])
   @@index([tenant_id, last_message_at])

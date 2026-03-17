@@ -16,7 +16,7 @@ export async function listUsers(input: ListUsersInput) {
     cursorPayload = decodeCursor(input.cursor);
   }
 
-  const users = await prisma.user.findMany({
+  const users = await prisma.appUser.findMany({
     where: {
       tenant_id: input.tenantId,
       deleted_at: null,
@@ -65,7 +65,7 @@ export async function listUsers(input: ListUsersInput) {
 }
 
 export async function getUserById(tenantId: string, id: string) {
-  const user = await prisma.user.findFirst({
+  const user = await prisma.appUser.findFirst({
     where: {
       id,
       tenant_id: tenantId,
@@ -92,7 +92,7 @@ export async function createUser(input: {
   fullName: string;
   status?: string;
 }) {
-  const existing = await prisma.user.findFirst({
+  const existing = await prisma.appUser.findFirst({
     where: {
       tenant_id: input.tenantId,
       email: input.email,
@@ -109,7 +109,7 @@ export async function createUser(input: {
   const hash = hashPassword(input.password);
 
   return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
+    const user = await tx.appUser.create({
       data: {
         id: crypto.randomUUID(),
         tenant_id: input.tenantId,
@@ -152,7 +152,7 @@ export async function createUser(input: {
       },
     });
 
-    const hydrated = await tx.user.findUnique({
+    const hydrated = await tx.appUser.findUnique({
       where: { id: user.id },
       include: {
         UserProfile: {
@@ -174,7 +174,7 @@ export async function updateUser(
   id: string,
   input: { email?: string; status?: string; fullName?: string; phone?: string | null },
 ) {
-  const existing = await prisma.user.findFirst({
+  const existing = await prisma.appUser.findFirst({
     where: {
       id,
       tenant_id: tenantId,
@@ -192,7 +192,7 @@ export async function updateUser(
   }
 
   if (input.email && input.email !== existing.email) {
-    const duplicated = await prisma.user.findFirst({
+    const duplicated = await prisma.appUser.findFirst({
       where: {
         tenant_id: tenantId,
         email: input.email,
@@ -210,7 +210,7 @@ export async function updateUser(
   const now = new Date();
 
   const updated = await prisma.$transaction(async (tx) => {
-    await tx.user.update({
+    await tx.appUser.update({
       where: { id },
       data: {
         email: input.email,
@@ -231,7 +231,7 @@ export async function updateUser(
       });
     }
 
-    const hydrated = await tx.user.findUnique({
+    const hydrated = await tx.appUser.findUnique({
       where: { id },
       include: {
         UserProfile: {
@@ -251,7 +251,7 @@ export async function updateUser(
 }
 
 export async function softDeleteUser(tenantId: string, id: string): Promise<void> {
-  const existing = await prisma.user.findFirst({
+  const existing = await prisma.appUser.findFirst({
     where: {
       id,
       tenant_id: tenantId,
@@ -264,7 +264,7 @@ export async function softDeleteUser(tenantId: string, id: string): Promise<void
     throw new ApiError(404, "USER_NOT_FOUND", "User not found");
   }
 
-  await prisma.user.update({
+  await prisma.appUser.update({
     where: { id },
     data: {
       status: "INACTIVE",

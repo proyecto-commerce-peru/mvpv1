@@ -22,7 +22,6 @@ import {
   Settings,
   Upload,
 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -30,6 +29,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { usePermissions } from "@/lib/hooks/use-permission";
+import { signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 const navSections = [
   {
@@ -39,6 +41,7 @@ const navSections = [
         label: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
+        permission: null, // visible para todos
       },
     ],
   },
@@ -49,31 +52,37 @@ const navSections = [
         label: "Subir catálogo",
         href: "/dashboard/catalogo",
         icon: Upload,
+        permission: "catalog:write",
       },
       {
         label: "Productos",
         href: "/dashboard/catalogo/productos",
         icon: Package,
+        permission: "catalog:read",
       },
       {
         label: "Imágenes",
         href: "/dashboard/imagenes",
         icon: ImageIcon,
+        permission: "images:read",
       },
       {
         label: "Precios",
         href: "/dashboard/precios",
         icon: DollarSign,
+        permission: "prices:read",
       },
       {
         label: "Prioridad",
         href: "/dashboard/prioridad",
         icon: Star,
+        permission: "catalog:read",
       },
       {
         label: "Promociones",
         href: "/dashboard/promociones",
         icon: Tag,
+        permission: "promotions:read",
       },
     ],
   },
@@ -84,34 +93,61 @@ const navSections = [
         label: "Datos personales",
         href: "/dashboard/perfil",
         icon: User,
+        permission: "tenant:read",
       },
       {
         label: "WhatsApp",
         href: "/dashboard/whatsapp",
         icon: MessageCircle,
+        permission: "whatsapp:read",
       },
       {
         label: "Agente IA",
         href: "/dashboard/agente",
         icon: Bot,
+        permission: "agent:read",
       },
       {
         label: "Forma de pago",
         href: "/dashboard/pagos",
         icon: CreditCard,
+        permission: "payments:read",
       },
       {
         label: "Forma de envío",
         href: "/dashboard/envios",
         icon: Truck,
+        permission: "shipping:read",
       },
     ],
   },
 ];
 
-export function Sidebar() {
+export function Sidebar({
+  isCollapsed,
+  onCollapsedChange,
+}: {
+  isCollapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
+}) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const router = useRouter();
+  const { permissions, isLoading } = usePermissions();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/login");
+  };
+
+  // Filtrar secciones y items según permisos del usuario
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => item.permission === null || permissions.has(item.permission)
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -134,7 +170,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => onCollapsedChange(!isCollapsed)}
             className={cn(
               "h-8 w-8 text-muted-foreground hover:text-foreground",
               isCollapsed && "hidden"
@@ -146,7 +182,12 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
-          {navSections.map((section) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            visibleSections.map((section) => (
             <div key={section.title} className="mb-6">
               {!isCollapsed && (
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3 mb-2">
@@ -200,7 +241,8 @@ export function Sidebar() {
                 })}
               </div>
             </div>
-          ))}
+          ))
+          )}
         </nav>
 
         {/* Footer */}
@@ -212,7 +254,7 @@ export function Sidebar() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setIsCollapsed(false)}
+                    onClick={() => onCollapsedChange(false)}
                     className="w-full h-10"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -222,15 +264,14 @@ export function Sidebar() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link href="/">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-full h-10 text-muted-foreground hover:text-destructive"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleSignOut}
+                    className="w-full h-10 text-muted-foreground hover:text-destructive"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent side="right">Cerrar sesión</TooltipContent>
               </Tooltip>
@@ -246,15 +287,14 @@ export function Sidebar() {
                   Ajustes
                 </Button>
               </Link>
-              <Link href="/">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
-                >
-                  <LogOut className="w-5 h-5" />
-                  Cerrar sesión
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                onClick={handleSignOut}
+                className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-5 h-5" />
+                Cerrar sesión
+              </Button>
             </div>
           )}
         </div>
